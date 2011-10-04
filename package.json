@@ -1,0 +1,15 @@
+{
+  "author": "Locker Project",
+  "name": "TLPBot",
+  "version": "0.0.1",
+  "repository": { "type" : "git", "url" : "http://github.com/LockerProject/TLPBot.git"},
+  "main":"tlpbot.js",
+  "engines": {
+    "node": ">=0.4.10"
+  },
+  "dependencies": {
+    "jerk":">=1.0.0",
+    "coloured":"=0.2.0",
+    "log":">=1.0"
+  }
+}
