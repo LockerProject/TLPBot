@@ -15,7 +15,18 @@ var options = {
     logdir : "/home/ircbot/irc-logs"
 };
 
-jerk( function(j) {
+var singletons = ['ctide', 'quartzjer', 'temas', 'othiym23', 'smurthas', 'smurthas1', 'smurthas2', 'mdz'];
+
+
+if (process.env.NODE_ENV === 'test') {
+    options.nick = 'tlpbottest';
+    options.channels = ['#tlp-bot'];
+    options.logdir = './';
+    singletons = ['ctide'];
+}
+
+
+var bot = jerk( function(j) {
 
 j.watch_for(/.*/, function(message) {
     if (options.channels.indexOf(message.source) < 0) return;
@@ -30,6 +41,15 @@ j.watch_for(/.*/, function(message) {
         log.write(JSON.stringify({timestamp:now, user:message.user, text:message.text}) + "\n");
         log.end();
     })
+})
+
+j.watch_for(/@all.*/, function(message) {
+    var text = message.text.toString();
+    text = text.split(' ').slice(1).join(' ');
+    for (var i = 0; i < singletons.length; i++) {
+        bot.say(singletons[i], 'Message in ' + message.source + ' from ' + message.user + ' to all:');
+        bot.say(singletons[i], message.text.toString().substring(5));
+    }
 })
 
 }).connect(options);
