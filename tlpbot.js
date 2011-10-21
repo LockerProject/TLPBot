@@ -15,7 +15,7 @@ var options = {
     logdir : "/home/ircbot/irc-logs"
 };
 
-var singletons = ['ctide', 'quartzjer', 'temas', 'othiym23', 'smurthas', 'smurthas1', 'smurthas2', 'mdz'];
+var singletons = ['ctide', 'quartzjer', 'temas', 'othiym23', 'smurthas', 'smurthas1', 'smurthas2', 'mdz', 'erictj'];
 
 
 if (process.env.NODE_ENV === 'test') {
