@@ -3,7 +3,6 @@ var path = require("path");
 var fs = require("fs");
 var express = require("express");
 var request = require("request");
-var oauth = require("oauth");
 var qs = require("querystring");
 var util = require("util");
 
@@ -116,7 +115,6 @@ var eventHandlers = {
     }
 };
 
-// Bug # show info in channel
 app.post("/github", function(req, res) {
     var payload = JSON.parse(req.body.payload);
     var handler = eventHandlers[req.headers["x-github-event"]];
@@ -129,44 +127,59 @@ app.post("/github", function(req, res) {
     res.send(200);
 });
 
-app.get("/github", function(req, res) {
-    console.log("From github: " + req.body);
-    res.send(200);
-});
-
-var oAuth;
-var tokenData;
-app.get("/startAuth", function(req, res) {
-    oAuth = new oauth.OAuth2("835432bc44f89c297e6e", "958e243e8b20682de6e55c441b4d8b037dcb5f3f", 'https://github.com/login', '/oauth/authorize', '/oauth/access_token');
-    res.redirect(oAuth.getAuthorizeUrl({response_type: 'code', redirect_uri: "http://sparecog.com:8888/auth"}));
-    res.end();
-});
-
-app.get("/auth", function(req, res) {
-    oAuth = new oauth.OAuth2("835432bc44f89c297e6e", "958e243e8b20682de6e55c441b4d8b037dcb5f3f", 'https://github.com/login', '/oauth/authorize', '/oauth/access_token');
-    oAuth.getOAuthAccessToken(req.param('code'), { grant_type: 'authorization_code', redirect_uri: "http://sparecog.com:8888/auth" }, 
-        function(err, oAuthAccessToken, oAuthRefreshToken) {
-        tokenData = {};
-        tokenData.accessToken = oAuthAccessToken;
-        tokenData.refreshToken = oAuthRefreshToken;
-
-        console.log("Connecting to github pubsubhubbub.");
-        oAuth._request("post", "https://api.github.com/hub", {}, qs.stringify({
-                "hub.mode":"subscribe", 
-                "hub.topic":"https://github.com/LockerProject/Locker/issues", 
-                "hub.callback":"http://sparecog.com:8888/github"}), oAuthAccessToken, 
-            function(subError, subRes, subBody) {
-                console.log("Here we are:" + subError);
-                res.send(util.inspect(arguments));
-            }
-        );
-    });
-});
-
 app.get("*", function(req, res) {
     console.log("Other stuff");
     res.send(200);
 });
 
 app.listen(8888, function() {
+    if (!options.githubUsername) return;
+
+    var stdio = process.binding("stdio");
+    var stdin = process.openStdin();
+
+    var password = "";
+
+    stdio.setRawMode();
+    process.stdout.write("Github password: ");
+    stdin.on("data", function(c) {
+        c = c + "";
+        switch (c) {
+            case "\n": case "\r": case "\u0004":
+                stdio.setRawMode(false);
+                stdin.pause();
+                function subToHub(type) {
+                    request.post({url:"https://" + options.githubUsername + ":" + password + "@api.github.com/hub", form:{
+                        "hub.mode":"subscribe", 
+                        "hub.topic":"https://github.com/" + options.baseUser + "/" + options.baseRepo + "/events/" + type, 
+                        "hub.callback":options.hubBubCallback + "/github"}},
+                        function(err, resp, body) {
+                            if (err) {
+                                console.error("ERROR setting up hub: " + err);
+                                return;
+                            }
+                            console.dir(resp);
+                            console.log("Setup issue hub: " + body);
+                        }
+                    );
+                }
+                subToHub("issues");
+                subToHub("issue_comment");
+                return;
+            case "\u0003":
+                stdio.setRawMode(false);
+                stdin.pause();
+                return;
+            default:
+                password += c;
+                break;
+        };
+    });
+    setTimeout(function() {
+        if (!password) {
+            console.log("Cancelled github password request");
+            stdio.setRawMode(false);
+            stdin.pause();
+        }
+    }, 10000);
 });
