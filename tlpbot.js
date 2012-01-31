@@ -25,8 +25,8 @@ if (process.env.NODE_ENV === 'test') {
 
 var bot = jerk( function(j) {
 
-j.watch_for(/.*/, function(message) {
-    if (options.channels.indexOf(message.source) < 0) return;
+j.watch_for(/^.*$/, function(message) {
+    if (options.channels.indexOf(message.source.toString()) < 0) return;
 
     var now = new Date();
     var location = path.join(options.logdir, message.source);
@@ -43,10 +43,12 @@ j.watch_for(/.*/, function(message) {
 j.watch_for(/@all.*/, function(message) {
     var text = message.text.toString();
     text = text.split(' ').slice(1).join(' ');
+    var msg = "";
     for (var i = 0; i < singletons.length; i++) {
-        bot.say(singletons[i], 'Message in ' + message.source + ' from ' + message.user + ' to all:');
-        bot.say(singletons[i], message.text.toString().substring(5));
+        msg += singletons[i] + ": "
     }
+    msg += "^^^";
+    message.say(msg);
 })
 
 j.watch_for(/#(\d+)/, function(message) {
@@ -135,12 +137,12 @@ app.get("*", function(req, res) {
 app.listen(8888, function() {
     if (!options.githubUsername) return;
 
-    var tty = require("tty");
     process.stdin.resume();
 
     var password = "";
 
-    tty.setRawMode();
+    var tty = require("tty");
+    tty.setRawMode(true);
     process.stdout.write("Github password: ");
     process.stdin.on("data", function(c) {
         c = c + "";
@@ -158,7 +160,6 @@ app.listen(8888, function() {
                                 console.error("ERROR setting up hub: " + err);
                                 return;
                             }
-                            console.dir(resp);
                             console.log("Setup issue hub: " + body);
                         }
                     );
