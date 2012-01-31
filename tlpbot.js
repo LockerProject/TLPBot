@@ -29,7 +29,7 @@ j.watch_for(/^.*$/, function(message) {
     if (options.channels.indexOf(message.source.toString()) < 0) return;
 
     var now = new Date();
-    var location = path.join(options.logdir, message.source);
+    var location = path.join(options.logdir, message.source.toString());
     var file = path.join(location, now.strftime("%Y-%m-%d.json"));
 
     path.exists(location, function (exists) {
