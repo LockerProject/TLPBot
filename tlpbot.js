@@ -136,18 +136,18 @@ app.listen(8888, function() {
     if (!options.githubUsername) return;
 
     var tty = require("tty");
-    var stdin = process.openStdin();
+    process.stdin.resume();
 
     var password = "";
 
     tty.setRawMode();
     process.stdout.write("Github password: ");
-    stdin.on("data", function(c) {
+    process.stdin.on("data", function(c) {
         c = c + "";
         switch (c) {
             case "\n": case "\r": case "\u0004":
                 tty.setRawMode(false);
-                stdin.pause();
+                process.stdin.pause();
                 function subToHub(type) {
                     request.post({url:"https://" + options.githubUsername + ":" + password + "@api.github.com/hub", form:{
                         "hub.mode":"subscribe", 
@@ -168,7 +168,7 @@ app.listen(8888, function() {
                 return;
             case "\u0003":
                 tty.setRawMode(false);
-                stdin.pause();
+                process.stdin.pause();
                 return;
             default:
                 password += c;
@@ -179,7 +179,7 @@ app.listen(8888, function() {
         if (!password) {
             console.log("Cancelled github password request");
             tty.setRawMode(false);
-            stdin.pause();
+            process.stdin.pause();
         }
     }, 10000);
 });
