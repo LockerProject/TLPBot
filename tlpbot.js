@@ -72,9 +72,6 @@ function sayBug(user, repo, number, message) {
                 return;
             }
             var msg = "#\u0002" + body.number + "\u0002\u0003 - ";
-            if (body.pull_request) {
-                msg += "Pull Request - ";
-            }
             if (body.state == "open") {
                 msg += "\u00033";
             } else if (body.state == "closed") {
