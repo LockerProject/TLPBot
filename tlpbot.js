@@ -89,9 +89,6 @@ function issue(body, short) {
     var issueStr = body.repository.name + "#\u0002" + body.issue.number + "\u0002\u0003";
     if (!short) {
         issueStr += " - ";
-        if (body.issue.pull_request) {
-            issueStr += "Pull Request - ";
-        }
         if (body.issue.state == "open") {
             issueStr += "\u00033";
         } else if (body.issue.state == "closed") {
