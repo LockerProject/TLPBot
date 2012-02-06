@@ -45,13 +45,18 @@ j.watch_for(/@all.*/, function(message) {
     text = text.split(' ').slice(1).join(' ');
     var msg = "";
     for (var i = 0; i < singletons.length; i++) {
-        msg += singletons[i] + ": "
+        if (singletons[i] != message.user)
+            msg += singletons[i] + ": "
     }
     msg += "^^^";
     message.say(msg);
 })
 
 j.watch_for(/#(\d+)/, function(message) {
+    if (message.user == "tlp-build-bot" ||
+        message.user.indexOf("CIA-") == 0)
+        return;
+
     if (options.baseUser && options.baseRepo) {
         sayBug(options.baseUser, options.baseRepo, message.match_data[1], message);
     }
