@@ -2,14 +2,17 @@
   "author": "Locker Project",
   "name": "TLPBot",
   "version": "0.0.1",
-  "repository": { "type" : "git", "url" : "http://github.com/LockerProject/TLPBot.git"},
+  "repository": { "type": "git", "url": "http://github.com/LockerProject/TLPBot.git" },
   "main":"tlpbot.js",
   "engines": {
     "node": ">=0.4.10"
   },
   "dependencies": {
-    "jerk":">=1.0.0",
-    "coloured":"=0.2.0",
-    "log":">=1.0"
+    "jerk": ">=1.0.0",
+    "coloured": "=0.2.0",
+    "log": ">=1.0",
+    "express": ">=2.5.8",
+    "request": ">=2.9.153",
+    "fermata": "0.8.4"
   }
 }

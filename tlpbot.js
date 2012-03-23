@@ -5,8 +5,9 @@ var express = require("express");
 var request = require("request");
 var qs = require("querystring");
 var util = require("util");
+var fermata = require("fermata");
 
-var app = express.createServer()
+var app = express.createServer();
 app.configure(function() {
     app.use(express.bodyParser());
 });
@@ -37,8 +38,8 @@ j.watch_for(/^.*$/, function(message) {
         var log = fs.createWriteStream(file, {flags:"a"});
         log.write(JSON.stringify({timestamp:now, user:message.user, text:message.text}) + "\n");
         log.end();
-    })
-})
+    });
+});
 
 j.watch_for(/@all.*/, function(message) {
     var text = message.text.toString();
@@ -58,7 +59,7 @@ j.watch_for(/#(\d+)/, function(message) {
         return;
 
     if (options.baseUser && options.baseRepo) {
-        sayBug(options.baseUser, options.baseRepo, message.match_data[1], message);
+        sayBug(options.baseUser, options.baseRepo, message.match_data[1], message, true);
     }
 });
 
@@ -68,13 +69,16 @@ j.watch_for(/github\.com\/(.*)\/(.*)\/issues\/(\d+)/, function(message) {
 
 }).connect(options);
 
-function sayBug(user, repo, number, message) {
-    request.get({url:"https://api.github.com/repos/" + user + "/" + repo + "/issues/" + number, json:true}, 
+function sayBug(user, repo, number, message, includeUrl) {
+    request.get({url:"https://api.github.com/repos/" + user + "/" + repo + "/issues/" + number, json:true},
         function(err, resp, body) {
             // TODO:  Rate limit checks
             if (err) {
                 console.error("Error getting bug: " + err);
                 return;
+            }
+            if (body.message === 'Not Found') {
+               return;
             }
             var msg = "#\u0002" + body.number + "\u0002\u0003 - ";
             if (body.state == "open") {
@@ -85,7 +89,14 @@ function sayBug(user, repo, number, message) {
                 msg += "\u00038";
             }
             msg += body.state + "\u0003: " + body.title;
-            message.say(msg);
+            if (body.html_url && includeUrl) {
+               shorten(body.html_url, function(url) {
+                  msg += " - " + url;
+                  message.say(msg);
+               });
+            } else {
+               message.say(msg);
+            }
         }
     );
 }
@@ -107,13 +118,30 @@ function issue(body, short) {
     return issueStr;
 }
 
+function shorten(url, cb) {
+   fermata.json('http://git.io').post({ 'Content-Type': 'multipart/form-data' }, { url: url }, function(err, result) {
+      if (result.headers && result.headers.Location) {
+         cb(result.headers.Location);
+      } else {
+         cb(url);
+      }
+   });
+}
+
 var eventHandlers = {
-    "issue_comment":function(body) {
-        bot.say(options.channels[0], body.sender.login + " commented on issue " + issue(body) + " (" + body.issue.html_url + ")");
-    },
-    "issues": function(body) {
-        bot.say(options.channels[0], body.sender.login + " " + body.action + " " + issue(body, true) + ": " + body.issue.title + " (" + body.issue.html_url + ")");
-    }
+   "issue_comment":function(body) {
+      bot.say(options.channels[0], body.sender.login + " commented on issue " + issue(body) + " (" + body.issue.html_url + ")");
+   },
+   "issues": function(body) {
+      bot.say(options.channels[0], body.sender.login + " " + body.action + " " + issue(body, true) + ": " + body.issue.title + " (" + body.issue.html_url + ")");
+   },
+   "pull_request": function(body) {
+      var msg = "Pull request #" + body.number + " " + body.action + " - " + body.pull_request.title;
+      shorten(body.pull_request.html_url, function(url) {
+         msg += " - " + url;
+         bot.say(options.channels[0], msg);
+      });
+   }
 };
 
 app.post("/github", function(req, res) {
@@ -151,8 +179,8 @@ app.listen(8888, function() {
                 process.stdin.pause();
                 function subToHub(type) {
                     request.post({url:"https://" + options.githubUsername + ":" + password + "@api.github.com/hub", form:{
-                        "hub.mode":"subscribe", 
-                        "hub.topic":"https://github.com/" + options.baseUser + "/" + options.baseRepo + "/events/" + type, 
+                        "hub.mode":"subscribe",
+                        "hub.topic":"https://github.com/" + options.baseUser + "/" + options.baseRepo + "/events/" + type,
                         "hub.callback":options.hubBubCallback + "/github"}},
                         function(err, resp, body) {
                             if (err) {
@@ -165,6 +193,7 @@ app.listen(8888, function() {
                 }
                 subToHub("issues");
                 subToHub("issue_comment");
+                subToHub("pull_request");
                 return;
             case "\u0003":
                 tty.setRawMode(false);
