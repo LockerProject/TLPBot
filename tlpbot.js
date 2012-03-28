@@ -139,16 +139,25 @@ function shorten(url, cb) {
 }
 
 var eventHandlers = {
-   "issue_comment":function(body) {
-      bot.say(options.channels[0], body.sender.login + " commented on issue " + issue(body) + " (" + body.issue.html_url + ")");
+   "issue_comment": function(body) {
+      var msg = body.sender.login + " commented on issue " + issue(body);
+      shorten(body.issue.html_url, function(url) {
+         msg += " (" + url + ")";
+         bot.say(options.channels[0], msg);
+      });
    },
    "issues": function(body) {
-      bot.say(options.channels[0], body.sender.login + " " + body.action + " " + issue(body, true) + ": " + body.issue.title + " (" + body.issue.html_url + ")");
+      var msg = body.sender.login + " " + body.action + " issue " + issue(body, true) + ": " + body.issue.title;
+      shorten(body.issue.html_url, function(url) {
+         msg += " (" + url + ")";
+         bot.say(options.channels[0], msg);
+      });
    },
    "pull_request": function(body) {
-      var msg = "Pull request #" + body.number + " " + body.action + " - " + body.pull_request.title;
+      var msg = body.sender.login + " " + body.action + " pull request " +
+         body.repository.name + "#" + body.number + ": " + body.pull_request.title;
       shorten(body.pull_request.html_url, function(url) {
-         msg += " - " + url;
+         msg += " (" + url + ")";
          bot.say(options.channels[0], msg);
       });
    }
