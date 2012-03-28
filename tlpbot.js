@@ -14,7 +14,17 @@ app.configure(function() {
 
 var options = JSON.parse(fs.readFileSync("config.json"));
 
-var singletons = ['quartzjer', 'temas', 'othiym23', 'smurthas', 'mdz', 'erictj', 'merc3po', "kristjan"];
+var singletons = [
+   'erictj',
+   'kristjan',
+   'mdz',
+   'merc3po',
+   'othiym23',
+   'quartzjer',
+   'smurthas',
+   'temas',
+   'tylerstalder'
+ ];
 
 if (process.env.NODE_ENV === 'test') {
     options.nick = 'tlpbottest';
@@ -47,15 +57,15 @@ j.watch_for(/@all.*/, function(message) {
     var msg = "";
     for (var i = 0; i < singletons.length; i++) {
         if (singletons[i] != message.user)
-            msg += singletons[i] + ": "
+            msg += singletons[i] + ": ";
     }
     msg += "^^^";
     message.say(msg);
-})
+});
 
 j.watch_for(/#(\d+)/, function(message) {
     if (message.user == "tlp-build-bot" ||
-        message.user.indexOf("CIA-") == 0)
+        message.user.indexOf("CIA-") === 0)
         return;
 
     if (options.baseUser && options.baseRepo) {
@@ -65,7 +75,7 @@ j.watch_for(/#(\d+)/, function(message) {
 
 j.watch_for(/github\.com\/(.*)\/(.*)\/issues\/(\d+)/, function(message) {
     sayBug(message.match_data[1], message.match_data[2], message.match_data[3], message);
-})
+});
 
 }).connect(options);
 
@@ -202,7 +212,7 @@ app.listen(8888, function() {
             default:
                 password += c;
                 break;
-        };
+        }
     });
     setTimeout(function() {
         if (!password) {
